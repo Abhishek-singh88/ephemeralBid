@@ -45,6 +45,10 @@ pub mod ephemeralbid {
         commit_bid_handler(ctx)
     }
 
+    pub fn commit_bid_l1(ctx: Context<CommitBidL1>) -> Result<()> {
+        commit_bid_l1_handler(ctx)
+    }
+
     pub fn settle_committed_bid(ctx: Context<SettleCommittedBid>) -> Result<()> {
         settle_committed_bid_handler(ctx)
     }
