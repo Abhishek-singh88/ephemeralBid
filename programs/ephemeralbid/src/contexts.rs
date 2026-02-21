@@ -56,7 +56,7 @@ pub struct DelegateBid<'info> {
     #[account(
         mut,
         has_one = bidder,
-        constraint = sealed_bid.status == BidStatus::Ready @ AuctionError::CannotDelegate,
+        constraint = sealed_bid.status == BidStatus::Active @ AuctionError::CannotDelegate,
         del
     )]
     pub sealed_bid: Account<'info, SealedBid>,
@@ -93,6 +93,22 @@ pub struct SubmitSealedBid<'info> {
 #[commit]
 #[derive(Accounts)]
 pub struct CommitBid<'info> {
+    #[account(mut)]
+    pub auction_house: Account<'info, AuctionHouse>,
+    #[account(
+        mut,
+        has_one = bidder,
+        constraint = sealed_bid.auction == auction_house.key() @ AuctionError::BidAuctionMismatch,
+        seeds = [BID_SEED, auction_house.key().as_ref(), bidder.key().as_ref()],
+        bump = sealed_bid.bump
+    )]
+    pub sealed_bid: Account<'info, SealedBid>,
+    pub bidder: Signer<'info>,
+}
+
+/// L1-compatible commit path (without MagicBlock commit accounts).
+#[derive(Accounts)]
+pub struct CommitBidL1<'info> {
     #[account(mut)]
     pub auction_house: Account<'info, AuctionHouse>,
     #[account(
