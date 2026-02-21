@@ -272,6 +272,57 @@ export const IDL =
       "args": []
     },
     {
+      "name": "commit_bid_l1",
+      "discriminator": [
+        199,
+        121,
+        188,
+        7,
+        79,
+        141,
+        176,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "auction_house",
+          "writable": true
+        },
+        {
+          "name": "sealed_bid",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction_house"
+              },
+              {
+                "kind": "account",
+                "path": "bidder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bidder",
+          "signer": true,
+          "relations": [
+            "sealed_bid"
+          ]
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_auction",
       "discriminator": [
         234,
