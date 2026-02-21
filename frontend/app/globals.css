@@ -1,1 +1,19 @@
 @import "tailwindcss";
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html,
+  body {
+    @apply m-0 min-h-full bg-amber-50 text-neutral-950 antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 8% 0%, #fffbeb 0%, transparent 32%),
+      radial-gradient(circle at 92% 22%, #dcfce7 0%, transparent 30%),
+      linear-gradient(150deg, #fff7ed 0%, #fefce8 100%);
+  }
+}
