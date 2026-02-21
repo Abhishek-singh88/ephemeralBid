@@ -57,7 +57,9 @@ pub fn initialize_sealed_bid_handler(ctx: Context<InitializeSealedBid>) -> Resul
     sealed_bid.bidder = ctx.accounts.bidder.key();
     sealed_bid.amount = 0;
     sealed_bid.deposited = 0;
-    sealed_bid.status = BidStatus::Ready;
+    // Keep bid writable by this program in later instructions. Delegation can
+    // change ownership flow, so we do not mutate status inside delegate ix.
+    sealed_bid.status = BidStatus::Active;
     sealed_bid.committed = false;
     sealed_bid.settled = false;
     sealed_bid.refund_claimed = false;
@@ -90,7 +92,6 @@ pub fn delegate_bid_handler(ctx: Context<DelegateBid>) -> Result<()> {
         },
     )?;
 
-    ctx.accounts.sealed_bid.status = BidStatus::Active;
     Ok(())
 }
 
@@ -146,6 +147,38 @@ pub fn submit_sealed_bid_handler(ctx: Context<SubmitSealedBid>, amount: u64) -> 
 
 /// Marks a delegated bid as committed after private execution finishes.
 pub fn commit_bid_handler(ctx: Context<CommitBid>) -> Result<()> {
+    let auction = &mut ctx.accounts.auction_house;
+    require!(
+        ctx.accounts.sealed_bid.status == BidStatus::Active,
+        AuctionError::AccountNotDelegated
+    );
+    require!(
+        ctx.accounts.sealed_bid.amount >= auction.min_bid,
+        AuctionError::BidBelowMinimum
+    );
+
+    let sealed_bid = &mut ctx.accounts.sealed_bid;
+    sealed_bid.status = BidStatus::Committed;
+
+    if !sealed_bid.committed {
+        sealed_bid.committed = true;
+        auction.committed_count = auction
+            .committed_count
+            .checked_add(1)
+            .ok_or(AuctionError::MathOverflow)?;
+    }
+
+    emit!(BidCommitted {
+        auction: auction.key(),
+        bidder: sealed_bid.bidder,
+        amount: sealed_bid.amount,
+    });
+
+    Ok(())
+}
+
+/// L1-compatible commit path for regular devnet/localnet testing.
+pub fn commit_bid_l1_handler(ctx: Context<CommitBidL1>) -> Result<()> {
     let auction = &mut ctx.accounts.auction_house;
     require!(
         ctx.accounts.sealed_bid.status == BidStatus::Active,
